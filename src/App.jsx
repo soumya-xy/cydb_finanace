@@ -8,6 +8,9 @@ import {
   ClockIcon, FireIcon , CheckCircleIcon , SparklesIcon
 } from '@heroicons/react/24/outline';
 
+// API Base URL - Use environment variable or default to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 
 
 
@@ -29,6 +32,10 @@ export default function App() {
   // Add state for RAG
   const [ragReport, setRagReport] = useState(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  // ADD BELOW existing RAG state
+  const [quickAssessment, setQuickAssessment] = useState(null);
+  const [isCheckingThreat, setIsCheckingThreat] = useState(false);
+
 
   // NEW: Real-time streaming stats
   const [streamingStats, setStreamingStats] = useState({
@@ -59,7 +66,7 @@ export default function App() {
     const fetchDefaultData = async () => {
       try {
         setSystemStatus('Loading View...');
-        const response = await axios.post('http://127.0.0.1:8000/secure-search', {
+        const response = await axios.post(`${API_BASE_URL}/secure-search`, {
           query: defaultQuery, 
           bank_filter: bankFilter,
           min_amount: 0,
@@ -77,8 +84,9 @@ export default function App() {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    // Connect to WebSocket
-    ws.current = new WebSocket('ws://127.0.0.1:8000/ws');
+    // Connect to WebSocket (convert HTTP to WS)
+    const wsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+    ws.current = new WebSocket(`${wsUrl}/ws`);
     
     ws.current.onopen = () => {
       console.log('WebSocket connected');
@@ -108,7 +116,7 @@ export default function App() {
       }
     };
   }, []);
-
+  /*
   // Auto-refresh search results every 10 seconds when streaming
   useEffect(() => {
     if (!isStreaming) return;
@@ -119,9 +127,10 @@ export default function App() {
     
     return () => clearInterval(interval);
   }, [isStreaming, searchQuery, bankFilter, minAmount, currentUser]);
-
+  */
   // Actions
   const handleIngest = async () => {
+    setQuickAssessment(null);
     if(!description || !amount) return;
     try {
       setSystemStatus('Encrypting & Ingesting...');
@@ -131,7 +140,7 @@ export default function App() {
                    currentUser === 'Charlie' ? 'Bank C' : 
                    selectedBank;
       
-      await axios.post('http://127.0.0.1:8000/secure-ingest', {
+      await axios.post(`${API_BASE_URL}/secure-ingest`, {
         description: description,
         amount: parseFloat(amount),
         bank: bank,
@@ -164,7 +173,7 @@ export default function App() {
     setIsGeneratingReport(true);
     setSystemStatus('Generating AI Analysis...');
     
-    const response = await axios.post('http://127.0.0.1:8000/rag-analysis', {
+    const response = await axios.post(`${API_BASE_URL}/rag-analysis`, {
         query: searchQuery || 'fraud patterns',
         bank_filter: bankFilter,
         min_amount: parseFloat(minAmount),
@@ -180,12 +189,38 @@ export default function App() {
       setIsGeneratingReport(false);
     }
   };
+  const handleQuickThreatCheck = async () => {
+    if (!description || !amount) return;
+
+    try {
+      setIsCheckingThreat(true);
+      setSystemStatus('Analyzing Transaction Risk...');
+
+      const response = await axios.post(
+        `${API_BASE_URL}/quick-threat-check`,
+        {
+          description: description,
+          amount: parseFloat(amount),
+          bank: selectedBank
+        }
+      );
+
+      setQuickAssessment(response.data.assessment);
+      setSystemStatus('Ready');
+
+    } catch (error) {
+      setSystemStatus('Error');
+      console.error(error);
+    } finally {
+      setIsCheckingThreat(false);
+    }
+  };
 
 
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/secure-delete/${id}`);
+      await axios.delete(`${API_BASE_URL}/secure-delete/${id}`);
       setResults(results.filter(r => r.id !== id));
     } catch (error) { console.error(error); }
   };
@@ -193,7 +228,7 @@ export default function App() {
   const handleSearch = async (silent = false) => {
     try {
       if (!silent) setSystemStatus('Scanning...');
-      const response = await axios.post('http://127.0.0.1:8000/secure-search', {
+      const response = await axios.post(`${API_BASE_URL}/secure-search`, {
         query: searchQuery,
         bank_filter: bankFilter,
         min_amount: parseFloat(minAmount),
@@ -219,7 +254,7 @@ export default function App() {
         description: broadcastPattern
       });
       
-      const response = await axios.post('http://127.0.0.1:8000/secure-broadcast', {
+      const response = await axios.post(`${API_BASE_URL}/secure-broadcast`, {
         source_bank: broadcastBank,
         description: broadcastPattern
       }, {
@@ -246,14 +281,14 @@ export default function App() {
 
   const handleIndexTrain = async () => {
     setSystemStatus('Optimizing...'); 
-    await axios.post('http://127.0.0.1:8000/secure-train'); 
+    await axios.post(`${API_BASE_URL}/secure-train`); 
     setSystemStatus('Ready'); 
     setLastAction('⚡ Index Optimized');
   };
   
   const handleFederatedRound = async () => {
     setSystemStatus('Aggregating...'); 
-    const res = await axios.post('http://127.0.0.1:8000/federated-round');
+    const res = await axios.post(`${API_BASE_URL}/federated-round`);
     setFlStats({ accuracy: res.data.new_accuracy, version: res.data.round_id });
     setSystemStatus('Ready'); 
     setLastAction(`🚀 Model Updated to ${res.data.round_id}`);
@@ -395,14 +430,38 @@ return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
             {/* INGESTION PANEL */}
-            <section className={`card-secondary ${currentUser === 'admin' ? 'border-teal' : 'border-primary'}`} style={{ padding: '1.5rem', borderRadius: '0.75rem', border: currentUser === 'admin' ? '1px solid var(--color-teal)' : '1px solid var(--color-dark-gray)' }}>
-              <h2 className="text-primary" style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {currentUser === 'admin' ? <BeakerIcon style={{ height: '1.25rem', width: '1.25rem' }} /> : <BanknotesIcon className="text-teal" style={{ height: '1.25rem', width: '1.25rem' }} />} 
+            <section
+              className={`card-secondary ${currentUser === 'admin' ? 'border-teal' : 'border-primary'}`}
+              style={{
+                padding: '1.5rem',
+                borderRadius: '0.75rem',
+                border: currentUser === 'admin'
+                  ? '1px solid var(--color-teal)'
+                  : '1px solid var(--color-dark-gray)'
+              }}
+            >
+              <h2
+                className="text-primary"
+                style={{
+                  fontSize: '1.125rem',
+                  fontWeight: 'bold',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {currentUser === 'admin'
+                  ? <BeakerIcon style={{ height: '1.25rem', width: '1.25rem' }} />
+                  : <BanknotesIcon className="text-teal" style={{ height: '1.25rem', width: '1.25rem' }} />}
                 {currentUser === 'admin' ? 'Fraud Injection' : 'Make Transfer'}
               </h2>
 
               {currentUser === 'admin' && (
-                <div className="admin-warning" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+                <div
+                  className="admin-warning"
+                  style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}
+                >
                   <ExclamationTriangleIcon style={{ height: '1rem', width: '1rem', flexShrink: 0 }} />
                   <p>Inject patterns to test AI detection.</p>
                 </div>
@@ -412,16 +471,31 @@ return (
                 {currentUser === 'admin' && (
                   <>
                     <div>
-                      <label className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Target DB</label>
-                      <select className="select-base" style={{ marginTop: '0.25rem' }} value={selectedBank} onChange={(e) => setSelectedBank(e.target.value)}>
+                      <label className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                        Target DB
+                      </label>
+                      <select
+                        className="select-base"
+                        style={{ marginTop: '0.25rem' }}
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                      >
                         <option value="Bank A">Bank A</option>
                         <option value="Bank B">Bank B</option>
                         <option value="Bank C">Bank C</option>
                       </select>
                     </div>
+
                     <div>
-                      <label className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Pattern Type</label>
-                      <select className="select-base" style={{ marginTop: '0.25rem' }} value={isFraud} onChange={(e) => setIsFraud(parseInt(e.target.value))}>
+                      <label className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                        Pattern Type
+                      </label>
+                      <select
+                        className="select-base"
+                        style={{ marginTop: '0.25rem' }}
+                        value={isFraud}
+                        onChange={(e) => setIsFraud(parseInt(e.target.value))}
+                      >
                         <option value={0}>✅ Legitimate (Normal)</option>
                         <option value={1}>🚨 Fraudulent (Threat)</option>
                       </select>
@@ -429,19 +503,88 @@ return (
                   </>
                 )}
 
-                <input className="input-base" 
+                <input
+                  className="input-base"
                   placeholder={currentUser === 'admin' ? "e.g. 'Stolen Card'" : "e.g. 'Coffee Shop'"}
-                  value={description} onChange={(e) => setDescription(e.target.value)}/>
-                
-                <input type="number" className="input-base" 
-                  placeholder="Amount ($)" 
-                  value={amount} onChange={(e) => setAmount(e.target.value)}/>
-                
-                <button onClick={handleIngest} className={currentUser === 'admin' ? 'btn-secondary' : 'btn-primary'} style={{ width: '100%', marginTop: '0.5rem' }}>
-                  {currentUser === 'admin' ? (isFraud === 1 ? 'Inject Threat' : 'Inject Data') : 'Send Funds'}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+
+                <input
+                  type="number"
+                  className="input-base"
+                  placeholder="Amount ($)"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+
+                <button
+                  onClick={handleIngest}
+                  className={currentUser === 'admin' ? 'btn-secondary' : 'btn-primary'}
+                  style={{ width: '100%', marginTop: '0.5rem' }}
+                >
+                  {currentUser === 'admin'
+                    ? (isFraud === 1 ? 'Inject Threat' : 'Inject Data')
+                    : 'Send Funds'}
                 </button>
+
+                {/* QUICK THREAT CHECK (NON-ADMIN ONLY) */}
+                {currentUser !== 'admin' && (
+                  <>
+                    <button
+                      onClick={handleQuickThreatCheck}
+                      disabled={isCheckingThreat}
+                      className="btn-secondary"
+                      style={{ width: '100%', marginTop: '0.5rem' }}
+                    >
+                      {isCheckingThreat ? 'Analyzing...' : '⚡ Quick Threat Check'}
+                    </button>
+
+                    {/* QUICK THREAT RESULT — LEFT PANEL ONLY */}
+                    {quickAssessment && (
+                      <div
+                        className="rag-report-card"
+                        style={{
+                          marginTop: '1rem',
+                          borderLeft: '3px solid var(--color-teal)'
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: '0.5rem'
+                          }}
+                        >
+                          <h3 className="text-teal" style={{ fontWeight: 'bold' }}>
+                            ⚡ Quick Threat Assessment
+                          </h3>
+                          <button
+                            onClick={() => setQuickAssessment(null)}
+                            className="text-muted"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div
+                          className="text-secondary"
+                          style={{
+                            fontSize: '0.875rem',
+                            whiteSpace: 'pre-wrap',
+                            lineHeight: '1.6'
+                          }}
+                        >
+                          {quickAssessment}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </section>
+
 
             {/* ADMIN TOOLS */}
             {currentUser === 'admin' && (
@@ -544,6 +687,7 @@ return (
                 </div>
               </div>
             )}
+
 
             {/* Results List */}
             <div className="results-container" style={{ marginTop: '1rem' }}>
