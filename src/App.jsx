@@ -353,7 +353,7 @@ return (
                 <div className="demo-tooltip">
                   this is a demo version.<br/>
                   Production deployment requires paid infrastructure.<br/>
-                  you can see the code on Github
+                  you can see the full code on Github
 
                 </div>
               )}
