@@ -385,6 +385,83 @@
   margin-top: 1.5rem;
 }
 
+/* Demo Mode Badge */
+.demo-mode-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  background-color: rgba(251, 191, 36, 0.15); /* Amber background */
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.demo-mode-badge:hover {
+  background-color: rgba(251, 191, 36, 0.25);
+  border-color: rgba(251, 191, 36, 0.6);
+}
+
+.demo-badge-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fbbf24; /* Amber color */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.demo-tooltip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-teal);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  color: #ffffff;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  min-width: 200px;
+  text-align: left;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.demo-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 1rem;
+  border: 6px solid transparent;
+  border-bottom-color: var(--color-teal);
+}
+
+/* GitHub Icon Link */
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+  transition: all 0.2s ease-in-out;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+}
+
+.github-link:hover {
+  color: var(--color-teal);
+  background-color: rgba(31, 141, 191, 0.1);
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .container-max {
@@ -395,6 +472,17 @@
   .header-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .header-bar > div:first-child {
+    width: 100%;
+  }
+  
+  .header-bar > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
   
   .search-bar {
@@ -407,5 +495,156 @@
   
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .grid-responsive {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-responsive > div {
+    grid-column: span 1 !important;
+  }
+  
+  .demo-mode-badge {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .demo-tooltip {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(100% + 0.75rem);
+    min-width: 250px;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .demo-tooltip::before {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .status-indicator {
+    font-size: 0.625rem;
+  }
+  
+  .status-indicator span {
+    font-size: 0.625rem;
+  }
+  
+  .card-secondary {
+    padding: 1rem !important;
+  }
+  
+  .broadcast-panel {
+    padding: 1rem !important;
+  }
+  
+  .transaction-card {
+    padding: 0.75rem;
+  }
+  
+  .filter-row > div {
+    width: 100%;
+  }
+  
+  .results-container {
+    gap: 0.75rem;
+  }
+  
+  footer .grid-responsive {
+    grid-template-columns: 1fr !important;
+  }
+  
+  footer > div > div:last-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  /* Admin tools grid */
+  .card-secondary > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Search bar header */
+  section.card-secondary > div:first-child {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  section.card-secondary > div:first-child button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-bar h1 {
+    font-size: 1rem !important;
+  }
+  
+  .header-bar .status-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+  }
+  
+  .card-secondary select,
+  .card-secondary input {
+    font-size: 0.875rem;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .stats-grid {
+    gap: 0.75rem;
+  }
+  
+  .stats-grid .card-secondary {
+    padding: 1rem !important;
+  }
+  
+  .stats-grid .card-secondary p:first-child {
+    font-size: 0.625rem;
+  }
+  
+  .stats-grid .card-secondary p:last-child {
+    font-size: 1.25rem;
+  }
+  
+  .demo-badge-text {
+    font-size: 0.625rem;
+  }
+  
+  .github-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-responsive > div {
+    grid-column: span 1 !important;
+  }
+  
+  .header-bar {
+    flex-wrap: wrap;
+  }
+  
+  .header-bar > div:last-child {
+    flex-wrap: wrap;
   }
 }
