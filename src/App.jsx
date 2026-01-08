@@ -5,7 +5,8 @@ import {
   ShieldCheckIcon, ServerStackIcon, MagnifyingGlassIcon, 
   BoltIcon, BanknotesIcon, GlobeAmericasIcon, ArrowPathIcon, TrashIcon, 
   BeakerIcon, ExclamationTriangleIcon, SignalIcon, ChartBarIcon,
-  ClockIcon, FireIcon , CheckCircleIcon , SparklesIcon
+  ClockIcon, FireIcon , CheckCircleIcon , SparklesIcon,
+  InformationCircleIcon, XMarkIcon
 } from '@heroicons/react/24/outline';
 
 // API Base URL - Use environment variable or default to localhost
@@ -56,6 +57,13 @@ export default function App() {
   
   // Tooltip state for Demo Mode badge
   const [showDemoTooltip, setShowDemoTooltip] = useState(false);
+  
+  // Backend load alert state
+  const [showLoadAlert, setShowLoadAlert] = useState(() => {
+    // Check if user has dismissed the alert before
+    const dismissed = localStorage.getItem('backendLoadAlertDismissed');
+    return !dismissed;
+  });
 
   // Auto-search on role switch
   useEffect(() => {
@@ -304,20 +312,55 @@ export default function App() {
     return "badge badge-danger";
   };
 
+  const handleDismissLoadAlert = () => {
+    setShowLoadAlert(false);
+    localStorage.setItem('backendLoadAlertDismissed', 'true');
+  };
+
 
 return (
   <div className="app-container">
     
     {/* =======================
+        BACKEND LOAD ALERT
+       ======================= */}
+    {showLoadAlert && (
+      <div className="backend-load-alert">
+        <div className="backend-load-alert-content">
+          <div className="backend-load-alert-icon">
+            <InformationCircleIcon style={{ height: '1.5rem', width: '1.5rem' }} />
+          </div>
+          <div className="backend-load-alert-text">
+            <h3 className="backend-load-alert-title">Initial Load Notice</h3>
+            <p className="backend-load-alert-message">
+              The backend is deployed on Render and may take approximately <strong>20 seconds</strong> to wake up on the first request. Please be patient while the service initializes.
+            </p>
+          </div>
+          <button 
+            onClick={handleDismissLoadAlert}
+            className="backend-load-alert-close"
+            aria-label="Dismiss alert"
+          >
+            <XMarkIcon style={{ height: '1.25rem', width: '1.25rem' }} />
+          </button>
+        </div>
+      </div>
+    )}
+    
+    {/* =======================
         GLASSMORPHISM NAVBAR 
        ======================= */}
-    <div style={{
+    <div className="navbar-wrapper" style={{
       position: 'sticky',
       top: 0,
       zIndex: 50,
       backdropFilter: 'blur(12px)',
       backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent black based on your var(--color-black)
-      borderBottom: '1px solid var(--color-dark-gray)'
+      borderBottom: '1px solid var(--color-dark-gray)',
+      width: '100%',
+      overflowX: 'hidden',
+      marginTop: showLoadAlert ? 'calc(var(--alert-height, 80px))' : 0,
+      transition: 'margin-top 0.3s ease-out'
     }}>
       <div className="container-max">
         <div className="header-bar" style={{ padding: '1rem 0' }}>
@@ -353,7 +396,7 @@ return (
                 <div className="demo-tooltip">
                   this is a demo version.<br/>
                   Production deployment requires paid infrastructure.<br/>
-                  you can see the full code on Github
+                  you can see the code on Github
 
                 </div>
               )}
